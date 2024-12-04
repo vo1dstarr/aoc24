@@ -74,18 +74,14 @@ fn num_mas_cross(input: &str) -> i32 {
                 continue;
             }
             let mut back_slash = false;
-            let mut top_left = matrix.up_left_iter(y, x);
-            top_left.next();
-            if let Some((new_y, new_x)) = top_left.get_state() {
+            if let Some((new_y, new_x)) = advance_and_get_state(matrix.up_left_iter(y, x)) {
                 if search(matrix.down_right_iter(new_y, new_x), needle) {
                     back_slash = true;
-                } else {
-                    let mut bottom_right = matrix.down_right_iter(y, x);
-                    bottom_right.next();
-                    if let Some((new_y, new_x)) = bottom_right.get_state() {
-                        if search(matrix.up_left_iter(new_y, new_x), needle) {
-                            back_slash = true;
-                        }
+                } else if let Some((new_y, new_x)) =
+                    advance_and_get_state(matrix.down_right_iter(y, x))
+                {
+                    if search(matrix.up_left_iter(new_y, new_x), needle) {
+                        back_slash = true;
                     }
                 }
             }
@@ -93,18 +89,14 @@ fn num_mas_cross(input: &str) -> i32 {
                 continue;
             }
             let mut forward_slash = false;
-            let mut top_right = matrix.up_right_iter(y, x);
-            top_right.next();
-            if let Some((new_y, new_x)) = top_right.get_state() {
+            if let Some((new_y, new_x)) = advance_and_get_state(matrix.up_right_iter(y, x)) {
                 if search(matrix.down_left_iter(new_y, new_x), needle) {
                     forward_slash = true;
-                } else {
-                    let mut bottom_left = matrix.down_left_iter(y, x);
-                    bottom_left.next();
-                    if let Some((new_y, new_x)) = bottom_left.get_state() {
-                        if search(matrix.up_right_iter(new_y, new_x), needle) {
-                            forward_slash = true;
-                        }
+                } else if let Some((new_y, new_x)) =
+                    advance_and_get_state(matrix.down_left_iter(y, x))
+                {
+                    if search(matrix.up_right_iter(new_y, new_x), needle) {
+                        forward_slash = true;
                     }
                 }
             }
@@ -116,6 +108,10 @@ fn num_mas_cross(input: &str) -> i32 {
     count
 }
 
+fn advance_and_get_state(mut iter: impl StateCheck) -> Option<(usize, usize)> {
+    iter.next();
+    iter.get_state()
+}
 struct Matrix {
     data: Vec<Vec<u8>>,
     y_len: usize,
@@ -232,12 +228,12 @@ impl Matrix {
     }
 }
 
-// trait StateCheck {
-//     fn safe(&self) -> bool;
+trait StateCheck: Iterator {
+    fn safe(&self) -> bool;
 
-//     fn get_state(&self) -> Option<(&u8, &u8)>;
-// }
-impl<'a> MatrixRight<'a> {
+    fn get_state(&self) -> Option<(usize, usize)>;
+}
+impl StateCheck for MatrixRight<'_> {
     fn safe(&self) -> bool {
         self.x < self.data.x_len
     }
@@ -262,7 +258,7 @@ impl<'a> Iterator for MatrixRight<'a> {
         ret
     }
 }
-impl<'a> MatrixLeft<'a> {
+impl StateCheck for MatrixLeft<'_> {
     fn safe(&self) -> bool {
         !self.flag
     }
@@ -291,7 +287,7 @@ impl<'a> Iterator for MatrixLeft<'a> {
         ret
     }
 }
-impl<'a> MatrixUp<'a> {
+impl StateCheck for MatrixUp<'_> {
     fn safe(&self) -> bool {
         !self.flag
     }
@@ -320,7 +316,7 @@ impl<'a> Iterator for MatrixUp<'a> {
         ret
     }
 }
-impl<'a> MatrixDown<'a> {
+impl StateCheck for MatrixDown<'_> {
     fn safe(&self) -> bool {
         self.y < self.data.y_len
     }
@@ -345,7 +341,7 @@ impl<'a> Iterator for MatrixDown<'a> {
         ret
     }
 }
-impl<'a> MatrixUpRight<'a> {
+impl StateCheck for MatrixUpRight<'_> {
     fn safe(&self) -> bool {
         !self.flag && self.x < self.data.x_len
     }
@@ -375,7 +371,7 @@ impl<'a> Iterator for MatrixUpRight<'a> {
         ret
     }
 }
-impl<'a> MatrixUpLeft<'a> {
+impl StateCheck for MatrixUpLeft<'_> {
     fn safe(&self) -> bool {
         !self.flag
     }
@@ -405,7 +401,7 @@ impl<'a> Iterator for MatrixUpLeft<'a> {
         ret
     }
 }
-impl<'a> MatrixDownRight<'a> {
+impl StateCheck for MatrixDownRight<'_> {
     fn safe(&self) -> bool {
         self.y < self.data.y_len && self.x < self.data.x_len
     }
@@ -431,7 +427,7 @@ impl<'a> Iterator for MatrixDownRight<'a> {
         ret
     }
 }
-impl<'a> MatrixDownLeft<'a> {
+impl StateCheck for MatrixDownLeft<'_> {
     fn safe(&self) -> bool {
         !self.flag && self.y < self.data.y_len
     }

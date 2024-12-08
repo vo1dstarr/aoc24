@@ -1,4 +1,4 @@
-use std::{cell::Cell, collections::HashSet, fs, mem};
+use std::{cell::Cell, collections::HashSet, fs};
 
 use crepe::crepe;
 use itertools::Itertools;
@@ -125,11 +125,6 @@ fn run_logic(rules: &[Rule]) -> HashSet<Before> {
     ordered
 }
 
-fn logic(rules: &[Rule], list: &[i32]) -> bool {
-    let ordered = run_logic(rules);
-    is_valid_order(list, &ordered)
-}
-
 fn is_valid_order(list: &[i32], ordered: &HashSet<Before>) -> bool {
     let mut is_in_order = true;
     for (x, y) in list.iter().tuple_windows() {
@@ -177,6 +172,11 @@ mod tests {
 97,13,75,29,47";
         let answer = part1(input);
         assert_eq!(answer, 143);
+    }
+
+    fn logic(rules: &[Rule], list: &[i32]) -> bool {
+        let ordered = run_logic(rules);
+        is_valid_order(list, &ordered)
     }
 
     #[test]

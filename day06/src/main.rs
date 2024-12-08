@@ -1,4 +1,4 @@
-use std::{clone, collections::HashSet, fs};
+use std::{collections::HashSet, fs};
 
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
@@ -22,7 +22,7 @@ fn part1(input: &str) -> i32 {
 }
 
 fn parse(input: &str) -> (Vec<Vec<Space>>, Guard) {
-    let mut matrix: Matrix = input
+    let matrix: Matrix = input
         .lines()
         .map(|line| {
             line.chars()

@@ -1,30 +1,63 @@
 use std::fs;
 
-use petgraph::{algo::has_path_connecting, graph::DiGraph, visit::EdgeFiltered};
+use petgraph::{
+    algo::{all_simple_paths, has_path_connecting},
+    graph::DiGraph,
+};
 
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
     println!("Answer to part1: {}", part1(&input));
-    // println!("Answer to part2: {}", part2(&input));
+    println!("Answer to part2: {}", part2(&input));
 }
 
-fn part1(input: &str) -> i32 {
+fn part1(input: &str) -> usize {
     let matrix = parse_to_matrix(input);
     let (graph, trailheads, trailends) = build_graph(matrix);
-    let filtered = EdgeFiltered::from_fn(&graph, |e| *(e.weight()) == 1);
+    count_scores(
+        &trailheads,
+        &trailends,
+        &graph,
+        |graph, head_idx, end_idx| {
+            if has_path_connecting(&graph, *head_idx, *end_idx, None) {
+                1
+            } else {
+                0
+            }
+        },
+    )
+}
+
+fn part2(input: &str) -> usize {
+    let matrix = parse_to_matrix(input);
+    let (graph, trailheads, trailends) = build_graph(matrix);
+    count_scores(
+        &trailheads,
+        &trailends,
+        &graph,
+        |graph, head_idx, end_idx| {
+            all_simple_paths::<Vec<_>, _>(graph, *head_idx, *end_idx, 0, None).count()
+        },
+    )
+}
+
+fn count_scores(
+    trailheads: &[petgraph::prelude::NodeIndex],
+    trailends: &[petgraph::prelude::NodeIndex],
+    graph: &petgraph::Graph<usize, u32>,
+    score_fn: impl Fn(
+        &petgraph::Graph<usize, u32>,
+        &petgraph::prelude::NodeIndex,
+        &petgraph::prelude::NodeIndex,
+    ) -> usize,
+) -> usize {
     trailheads
         .iter()
         .map(|head_idx| {
             trailends
                 .iter()
-                .map(|end_idx| {
-                    if has_path_connecting(&filtered, *head_idx, *end_idx, None) {
-                        1
-                    } else {
-                        0
-                    }
-                })
-                .sum::<i32>()
+                .map(|end_idx| score_fn(graph, head_idx, end_idx))
+                .sum::<usize>()
         })
         .sum()
 }
@@ -32,7 +65,7 @@ fn part1(input: &str) -> i32 {
 fn build_graph(
     matrix: Vec<Vec<i32>>,
 ) -> (
-    petgraph::Graph<usize, i32, petgraph::Directed>,
+    petgraph::Graph<usize, u32, petgraph::Directed>,
     Vec<petgraph::prelude::NodeIndex>,
     Vec<petgraph::prelude::NodeIndex>,
 ) {
@@ -60,19 +93,31 @@ fn build_graph(
         for (x, (val, g_id)) in row.iter().enumerate() {
             if x + 1 < m_wid {
                 let (next_val, next_id) = g_ids[y][x + 1];
-                graph.add_edge(*g_id, next_id, next_val - val);
+                let weight = next_val - val;
+                if weight == 1 {
+                    graph.add_edge(*g_id, next_id, weight as u32);
+                }
             }
             if y + 1 < m_len {
                 let (next_val, next_id) = g_ids[y + 1][x];
-                graph.add_edge(*g_id, next_id, next_val - val);
+                let weight = next_val - val;
+                if weight == 1 {
+                    graph.add_edge(*g_id, next_id, weight as u32);
+                }
             }
             if x > 0 {
                 let (next_val, next_id) = g_ids[y][x - 1];
-                graph.add_edge(*g_id, next_id, next_val - val);
+                let weight = next_val - val;
+                if weight == 1 {
+                    graph.add_edge(*g_id, next_id, weight as u32);
+                }
             }
             if y > 0 {
                 let (next_val, next_id) = g_ids[y - 1][x];
-                graph.add_edge(*g_id, next_id, next_val - val);
+                let weight = next_val - val;
+                if weight == 1 {
+                    graph.add_edge(*g_id, next_id, weight as u32);
+                }
             }
         }
     }
@@ -107,5 +152,19 @@ mod tests {
 10456732";
         let answer = part1(input);
         assert_eq!(answer, 36);
+    }
+
+    #[test]
+    fn test_part2() {
+        let input = "89010123
+78121874
+87430965
+96549874
+45678903
+32019012
+01329801
+10456732";
+        let answer = part2(input);
+        assert_eq!(answer, 81);
     }
 }
